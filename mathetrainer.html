@@ -18,26 +18,26 @@
         }
 
         .glass {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .widget {
             position: absolute;
-            min-width: 340px;
-            min-height: 480px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            min-width: 360px;
+            min-height: 660px; /* Fenster bleibt groß genug für Brüche */
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
-            border-radius: 2rem;
+            border-radius: 2.5rem;
             overflow: hidden;
             touch-action: none;
         }
 
         .widget-header {
-            height: 50px;
+            height: 55px;
             background: rgba(30, 41, 59, 0.5);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             display: flex;
@@ -59,7 +59,7 @@
         .btn-glass {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255, 255, 255, 0.5);
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.1em;
@@ -73,7 +73,7 @@
             color: #22d3ee;
         }
 
-        /* Spinner im Input entfernen & Clipping verhindern */
+        /* Zurück zur normalen Größe (2 Prompts her) */
         .math-input {
             -webkit-appearance: none;
             -moz-appearance: textfield; 
@@ -82,13 +82,13 @@
             border-bottom: 2px solid rgba(34, 211, 238, 0.2);
             width: 100%;
             text-align: center;
-            font-size: 2.8rem; /* Etwas größer */
+            font-size: 2.5rem; /* Zurückgesetzt */
             line-height: 1.2;
             font-weight: 800;
             color: #22d3ee;
             outline: none;
             transition: border-color 0.3s ease;
-            padding: 0.5rem 0; /* Mehr Platz oben/unten */
+            padding: 0.5rem 0;
         }
         .math-input::-webkit-inner-spin-button, 
         .math-input::-webkit-outer-spin-button { 
@@ -100,17 +100,16 @@
 
         .correct-flash { animation: correct-pulse 0.5s ease-out; }
         @keyframes correct-pulse {
-            0% { background: rgba(15, 23, 42, 0.8); }
+            0% { background: rgba(15, 23, 42, 0.85); }
             50% { background: rgba(34, 197, 94, 0.2); }
-            100% { background: rgba(15, 23, 42, 0.8); }
+            100% { background: rgba(15, 23, 42, 0.85); }
         }
 
         .wrong-flash { animation: wrong-pulse 0.5s ease-out; }
         @keyframes wrong-pulse {
-            0% { transform: translateX(0); }
+            0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); background: rgba(239, 68, 68, 0.1); }
             75% { transform: translateX(5px); }
-            100% { transform: translateX(0); }
         }
 
         .resizer {
@@ -123,7 +122,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.1);
             z-index: 100;
         }
         .resizer:hover { color: #22d3ee; }
@@ -153,7 +152,7 @@
 <body class="text-slate-200 h-screen w-screen relative">
 
     <div class="fixed inset-0 z-0 opacity-10 pointer-events-none">
-        <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=2000&auto=format&fit=crop" alt="Hintergrund Mathematik">
+        <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=2000&auto=format&fit=crop" alt="Hintergrund">
     </div>
 
     <main id="workspace" class="relative w-full h-full z-10 overflow-hidden"></main>
@@ -175,11 +174,11 @@
             widget.style.zIndex = ++zIndexCounter;
             
             const wWidth = 380;
-            const wHeight = 520;
+            const wHeight = 660; // Fenster bleibt groß
             widget.style.width = `${wWidth}px`;
             widget.style.height = `${wHeight}px`;
             
-            const offset = (widgetCount % 5) * 30;
+            const offset = (widgetCount % 6) * 35;
             widget.style.left = `${(window.innerWidth - wWidth) / 2 + offset}px`;
             widget.style.top = `${(window.innerHeight - wHeight) / 2 + offset}px`;
             widgetCount++;
@@ -212,13 +211,13 @@
                             <div id="score-correct" class="text-emerald-400 font-black text-xl">0</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-[8px] uppercase text-slate-500 font-bold mb-1">Aufgaben</div>
+                            <div class="text-[8px] uppercase text-slate-500 font-bold mb-1">Gesamt</div>
                             <div id="score-total" class="text-slate-400 font-black text-xl">0</div>
                         </div>
                     </div>
 
                     <div id="exercise-area" class="flex-grow flex flex-col items-center justify-center bg-slate-900/40 rounded-3xl border border-white/5 p-6 relative transition-all duration-300">
-                        <div id="task-display" class="text-4xl font-black text-white mb-6 tracking-tighter text-center min-h-[100px] flex items-center justify-center py-4">Modus wählen</div>
+                        <div id="task-display" class="text-4xl font-black text-white mb-6 tracking-tighter text-center min-h-[100px] flex items-center justify-center py-4">Wähle Modus</div>
                         <div class="w-full">
                             <input type="number" id="math-answer" class="math-input" placeholder="">
                         </div>
@@ -276,7 +275,7 @@
                 const den = Math.floor(Math.random()*8)+2;
                 const num1 = Math.floor(Math.random()*den)+1; const num2 = Math.floor(Math.random()*den)+1;
                 state.currentAnswer = num1 + num2;
-                display.innerHTML = `<div class="flex items-center gap-6 py-2"><div class="flex flex-col items-center"><span>${num1}</span><div class="w-10 h-1 bg-white/50 my-1.5"></div><span>${den}</span></div><span class="text-cyan-400 text-3xl font-black">+</span><div class="flex flex-col items-center"><span>${num2}</span><div class="w-10 h-1 bg-white/50 my-1.5"></div><span>${den}</span></div></div>`;
+                display.innerHTML = `<div class="flex items-center gap-6 py-4"><div class="flex flex-col items-center"><span>${num1}</span><div class="w-10 h-1 bg-white/50 my-2"></div><span>${den}</span></div><span class="text-cyan-400 text-3xl font-black">+</span><div class="flex flex-col items-center"><span>${num2}</span><div class="w-10 h-1 bg-white/50 my-2"></div><span>${den}</span></div></div>`;
             }
             else if(state.mode === 'units') {
                 const types = [{from: 'km', to: 'm', f: 1000},{from: 'm', to: 'cm', f: 100},{from: 'kg', to: 'g', f: 1000},{from: 'l', to: 'ml', f: 1000}];
@@ -313,7 +312,6 @@
         function setupDraggable(el) {
             let dragging = false; let sX, sY, iX, iY;
             const header = el.querySelector('.widget-header');
-            
             header.onpointerdown = (e) => {
                 if (e.target.closest('button')) return;
                 dragging = true; el.style.zIndex = ++zIndexCounter;
@@ -331,17 +329,15 @@
         function setupResizable(el) {
             const resizer = el.querySelector('.resizer');
             let resizing = false; let sX, sY, sW, sH;
-            
             resizer.onpointerdown = (e) => {
                 e.stopPropagation(); resizing = true;
-                sX = e.clientX; sY = e.clientY;
-                sW = el.offsetWidth; sH = el.offsetHeight;
+                sX = e.clientX; sY = e.clientY; sW = el.offsetWidth; sH = el.offsetHeight;
                 resizer.setPointerCapture(e.pointerId);
             };
             resizer.onpointermove = (e) => {
                 if (!resizing) return;
                 el.style.width = `${Math.max(340, sW + (e.clientX - sX))}px`;
-                el.style.height = `${Math.max(450, sH + (e.clientY - sY))}px`;
+                el.style.height = `${Math.max(480, sH + (e.clientY - sY))}px`;
             };
             resizer.onpointerup = () => { resizing = false; };
         }
