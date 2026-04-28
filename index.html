@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lehrer-Dashboard Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            background-color: #020617;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .widget {
+            position: absolute;
+            min-width: 60px;
+            min-height: 60px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transition: opacity 0.3s ease, left 0.4s ease, top 0.4s ease, border-color 0.3s ease, height 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease-out;
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            overflow: visible; 
+            container-type: size;
+            cursor: pointer; 
+        }
+
+        .widget::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 25px;
+            cursor: move;
+            z-index: 40;
+            border-radius: 2.5rem 2.5rem 0 0;
+        }
+
+        .widget.minimized {
+            width: 64px !important;
+            height: 64px !important;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            overflow: hidden;
+        }
+        
+        .widget.minimized::before { display: none; }
+
+        .widget.minimized .widget-header,
+        .widget.minimized .widget-content {
+            display: none !important;
+        }
+
+        .widget.minimized .minimized-icon-container {
+            display: flex !important;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            color: rgba(34, 211, 238, 1);
+        }
+
+        .minimized-icon-container { display: none; }
+
+        .widget-header {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            right: 0;
+            height: 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        .widget:hover .widget-header,
+        .widget-header:hover {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .header-bar .widget-header {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem 1.5rem 0.5rem 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .header-circles .widget-header {
+            background: transparent;
+            justify-content: flex-end;
+            padding: 0;
+            top: -25px;
+            right: -10px;
+            left: auto;
+        }
+        .header-circles .widget-header span { display: none; }
+        .header-circles .control-btns { gap: 0.5rem; }
+        .header-circles .control-btns button {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .widget-header span {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(244, 244, 245, 0.9);
+        }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.2s ease;
+        }
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .mode-carousel {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 1rem;
+            padding: 2rem 50%;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            align-items: center;
+        }
+        .mode-carousel::-webkit-scrollbar { display: none; }
+        
+        .mode-card {
+            flex: 0 0 140px;
+            scroll-snap-align: center;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 2rem;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .ampel-active { filter: brightness(1.3) drop-shadow(0 0 20px currentColor); }
+
+        .speaker-active {
+            color: #22d3ee !important;
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 8px;
+            padding: 2px 6px;
+        }
+
+        .timer-running .timer-input-area, 
+        .timer-running .timer-presets {
+            display: none !important;
+        }
+
+        .floating-emoji {
+            position: fixed; pointer-events: none; z-index: 9999;
+            animation: float-up 3s ease-out forwards;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-20vh) rotate(360deg) scale(1.5); opacity: 0; }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="text-slate-200 h-screen w-screen relative header-circles">
+
+    <div class="fixed inset-0 z-0 opacity-20 pointer-events-none">
+        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop" alt="Hintergrund" class="w-full h-full object-cover">
+    </div>
+
+    <header id="main-header" class="fixed top-0 left-0 right-0 p-10 flex justify-end items-start z-10 pointer-events-none transition-all duration-700">
+        <div class="text-right">
+            <div id="clock" class="text-7xl font-black text-white tracking-tighter drop-shadow-2xl">00:00:00</div>
+            <div id="date" class="text-xl text-slate-400 mt-1 font-medium italic">Lade Datum...</div>
+        </div>
+    </header>
+
+    <main id="workspace" class="relative w-full h-full p-10 z-20 overflow-hidden"></main>
+
+    <nav class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
+        <div class="bg-slate-900/80 backdrop-blur-3xl px-8 py-5 rounded-[3rem] border border-white/5 flex gap-4 items-center shadow-2xl">
+            <button onclick="spawnWidget('dice')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-cyan-400" title="Würfel"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r=".5" fill="currentColor"/><circle cx="15.5" cy="8.5" r=".5" fill="currentColor"/><circle cx="12" cy="12" r=".5" fill="currentColor"/><circle cx="8.5" cy="15.5" r=".5" fill="currentColor"/><circle cx="15.5" cy="15.5" r=".5" fill="currentColor"/></svg></button>
+            <button onclick="spawnWidget('groups')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-cyan-400" title="Gruppen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="19" cy="8" r="3"/></svg></button>
+            <button onclick="spawnWidget('timer')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-cyan-400" title="Timer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+            <button onclick="spawnWidget('traffic')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-yellow-400" title="Verfügbarkeit"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="8" height="16" x="8" y="4" rx="2"/><circle cx="12" cy="9" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="15" r="1"/></svg></button>
+            <button onclick="spawnWidget('mode')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-purple-400" title="Modus"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></button>
+            <button onclick="spawnWidget('additional')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-blue-400" title="Zusätzliches"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></button>
+            <button onclick="spawnWidget('qr')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-orange-400" title="QR Code"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/></svg></button>
+            <button onclick="spawnWidget('feedback')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-yellow-300" title="Effekte"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></button>
+            <div class="w-px h-10 bg-white/10 mx-2"></div>
+            <button onclick="spawnWidget('session')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-emerald-400" title="Sichern"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
+            <button onclick="spawnWidget('settings')" class="p-3 hover:bg-white/5 rounded-2xl transition-all text-slate-400 hover:text-white" title="Einstellungen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1-1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+    </nav>
+
+    <script>
+        let zIndexCounter = 100;
+        const workspace = document.getElementById('workspace');
+
+        let config = {
+            showTime: true, showSeconds: false, showDate: true,
+            anchorMode: false, soundEnabled: true, headerStyle: 'circles'
+        };
+
+        const savedConfig = localStorage.getItem('dashboard_config');
+        if(savedConfig) config = JSON.parse(savedConfig);
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSynth(params = {}) {
+            if (!config.soundEnabled) return;
+            const { freq=440, type='sine', duration=0.5, volume=0.1, sweep=0 } = params;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            if (sweep !== 0) osc.frequency.exponentialRampToValueAtTime(freq+sweep, audioCtx.currentTime+duration);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime+0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime+duration);
+        }
+
+        const Sounds = {
+            click: () => playSynth({ freq: 800, duration: 0.05, volume: 0.05 }),
+            magic: () => playSynth({ freq: 440, duration: 0.6, sweep: 880 }),
+            pop: () => playSynth({ freq: 400, duration: 0.15, volume: 0.2, sweep: -200 }),
+            tada: () => { playSynth({ freq: 523, duration: 0.8, type: 'triangle' }); setTimeout(() => playSynth({ freq: 659, duration: 0.8, type: 'triangle' }), 50); setTimeout(() => playSynth({ freq: 783, duration: 1, type: 'triangle' }), 100); }
+        };
+
+        function applyConfigStyles() { 
+            document.body.className = `text-slate-200 h-screen w-screen relative header-${config.headerStyle}`;
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const clockEl = document.getElementById('clock');
+            const dateEl = document.getElementById('date');
+            const headerEl = document.getElementById('main-header');
+            const showHeader = config.showTime || config.showDate;
+            if (headerEl) { headerEl.style.opacity = showHeader ? '1' : '0'; headerEl.style.transform = showHeader ? 'translateY(0)' : 'translateY(-20px)'; }
+            if(clockEl) { if (config.showTime) { clockEl.classList.remove('hidden'); const opt = { hour:'2-digit', minute:'2-digit', second:config.showSeconds?'2-digit':undefined }; clockEl.textContent = now.toLocaleTimeString('de-DE', opt); } else { clockEl.classList.add('hidden'); } }
+            if(dateEl) { if (config.showDate) { dateEl.classList.remove('hidden'); dateEl.textContent = now.toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }); } else { dateEl.classList.add('hidden'); } }
+        }
+        setInterval(updateTime, 1000); updateTime(); applyConfigStyles();
+
+        const widgetIcons = {
+            dice: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r=".5" fill="currentColor"/><circle cx="15.5" cy="8.5" r=".5" fill="currentColor"/><circle cx="12" cy="12" r=".5" fill="currentColor"/><circle cx="8.5" cy="15.5" r=".5" fill="currentColor"/><circle cx="15.5" cy="15.5" r=".5" fill="currentColor"/></svg>`,
+            groups: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="19" cy="8" r="3"/></svg>`,
+            timer: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+            traffic: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="8" height="16" x="8" y="4" rx="2"/><circle cx="12" cy="9" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="15" r="1"/></svg>`,
+            mode: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+            qr: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/></svg>`,
+            feedback: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`,
+            session: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`,
+            settings: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1-1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
+            presentation: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>`,
+            additional: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>`
+        };
+
+        const sizeModes = {
+            dice: [{w:320,h:400}, {w:240,h:300}, {w:160,h:200}],
+            groups: [{w:380,h:400}, {w:285,h:300}, {w:190,h:200}],
+            timer: [{w:340,h:400}, {w:255,h:300}, {w:170,h:200}],
+            traffic: [{w:222,h:400}, {w:166,h:300}, {w:111,h:200}],
+            mode: [{w:420,h:400}, {w:315,h:300}, {w:210,h:200}],
+            qr: [{w:350,h:400}, {w:260,h:300}, {w:175,h:200}],
+            settings: [{w:340,h:400}, {w:280,h:300}, {w:220,h:200}],
+            presentation: [{w:400,h:400}, {w:300,h:300}, {w:200,h:200}],
+            session: [{w:320,h:400}, {w:240,h:300}, {w:160,h:200}],
+            feedback: [{w:320,h:400}, {w:240,h:300}, {w:160,h:200}],
+            additional: [{w:340,h:400}, {w:280,h:300}, {w:220,h:200}]
+        };
+
+        function spawnWidget(type, initialData = null) {
+            const singletons = ['session', 'settings', 'feedback', 'additional'];
+            if (singletons.includes(type)) {
+                const existing = document.querySelector(`[data-type="${type}"]`);
+                if (existing) { zIndexCounter++; existing.style.zIndex = zIndexCounter; Sounds.click(); return; }
+            }
+            const id = `widget-${Date.now()}`;
+            const widget = document.createElement('div');
+            widget.id = id; widget.setAttribute('data-type', type);
+            widget.className = `widget glass rounded-[2.5rem]`;
+            widget.style.zIndex = ++zIndexCounter;
+            
+            widget._sizeIndex = initialData?.sizeIndex || 0;
+            const presets = sizeModes[type] || [{w:300,h:400},{w:225,h:300},{w:150,h:200}];
+            const currentSize = presets[widget._sizeIndex];
+            widget.style.width = `${currentSize.w}px`;
+            widget.style.height = `${currentSize.h}px`;
+
+            const titles = { 'dice':'Würfel','groups':'Gruppen','timer':'Timer','traffic':'Status','mode':'Modus','qr':'QR Code','settings':'Settings','presentation':'Präsentation','session':'Sitzung','feedback':'Effekte','additional':'Zusätzliches' };
+            
+            widget.innerHTML = `
+                <div class="minimized-icon-container">${widgetIcons[type] || ''}</div>
+                <div class="widget-header cursor-move">
+                    <span class="sharp-text">${titles[type]}</span>
+                    <div class="control-btns flex">
+                        <button class="minimize-btn p-2 text-slate-400 hover:text-white transition-all rounded-full"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12h14"/></svg></button>
+                        <button class="close-btn p-2 text-slate-400 hover:text-white transition-all rounded-full"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                    </div>
+                </div>
+                <div class="widget-content p-6 flex-grow flex flex-col justify-center overflow-hidden relative"></div>`;
+            
+            const header = widget.querySelector('.widget-header');
+            const content = widget.querySelector('.widget-content');
+            workspace.appendChild(widget);
+            
+            if (type === 'dice') initDiceWidget(content);
+            if (type === 'groups') initGroupWidget(content, initialData);
+            if (type === 'timer') initTimerWidget(content, widget, initialData);
+            if (type === 'traffic') initTrafficLightWidget(content, initialData);
+            if (type === 'mode') initClassModeWidget(content);
+            if (type === 'qr') initQRWidget(content, widget, initialData);
+            if (type === 'settings') initSettingsWidget(content);
+            if (type === 'presentation') initPresentationWidget(content, widget, initialData);
+            if (type === 'session') initSessionWidget(content);
+            if (type === 'feedback') initFeedbackWidget(content);
+            if (type === 'additional') initAdditionalWidget(content);
+            
+            if (initialData?.pos) { widget.style.left = initialData.pos.x; widget.style.top = initialData.pos.y; }
+            else { widget.style.left = `${(window.innerWidth/2)-(currentSize.w/2)+(Math.random()-0.5)*100}px`; widget.style.top = `${(window.innerHeight/2)-(currentSize.h/2)+(Math.random()-0.5)*100}px`; }
+            if (initialData?.minimized) widget.classList.add('minimized');
+            
+            setupDraggable(widget, header);
+            
+            widget.addEventListener('click', (e) => {
+                const isInteractive = e.target.closest('button') || 
+                                     e.target.closest('input') || 
+                                     e.target.closest('textarea') || 
+                                     e.target.closest('select') || 
+                                     e.target.closest('span') || 
+                                     e.target.closest('label') ||
+                                     e.target.closest('[onclick]') ||
+                                     e.target.closest('.light') ||
+                                     e.target.closest('.dice-box') ||
+                                     e.target.closest('.interactive-frame');
+
+                if(isInteractive || widget._wasDragged) return;
+                if(widget.classList.contains('minimized')) { widget.classList.remove('minimized'); Sounds.click(); return; }
+                
+                widget._sizeIndex = (widget._sizeIndex + 1) % 3;
+                const newSize = (sizeModes[type] || presets)[widget._sizeIndex];
+                widget.style.width = `${newSize.w}px`;
+                widget.style.height = `${newSize.h}px`;
+                Sounds.click();
+            });
+
+            header.querySelector('.close-btn').onclick = (e) => { e.stopPropagation(); closeWidget(id); };
+            header.querySelector('.minimize-btn').onclick = (e) => { e.stopPropagation(); widget.classList.toggle('minimized'); Sounds.click(); };
+            
+            return widget;
+        }
+
+        function closeWidget(id) { const w = document.getElementById(id); if (w) { if (w._timerInterval) clearInterval(w._timerInterval); w.remove(); } }
+
+        function setupDraggable(el, header) {
+            let dragging = false; let sX, sY, iX, iY; let moveThreshold = 5;
+            const onDown = (e) => {
+                const isHeader = e.target.closest('.widget-header');
+                const isMinimized = el.classList.contains('minimized');
+                const isTopEdge = !isMinimized && (e.clientY - el.getBoundingClientRect().top < 25); 
+                if (config.anchorMode || e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea') || (!isHeader && !isMinimized && !isTopEdge)) return;
+                dragging = true; el.style.zIndex = ++zIndexCounter; sX = e.clientX; sY = e.clientY; iX = el.offsetLeft; iY = el.offsetTop; el._wasDragged = false;
+                el.setPointerCapture(e.pointerId); el.style.transition = "none";
+            };
+            const onMove = (e) => { if (!dragging) return; let dx = e.clientX - sX; let dy = e.clientY - sY; if (Math.sqrt(dx*dx+dy*dy) > moveThreshold) { el._wasDragged = true; el.style.left = `${iX + dx}px`; el.style.top = `${iY + dy}px`; } };
+            const onUp = () => { dragging = false; el.style.transition = ""; setTimeout(() => { if(!dragging) el._wasDragged = false; }, 50); };
+            el.addEventListener('pointerdown', onDown); el.addEventListener('pointermove', onMove); el.addEventListener('pointerup', onUp);
+        }
+
+        function initTrafficLightWidget(c, i) { 
+            const col = i?.data?.color || 'green'; const widget = c.closest('.widget'); widget._state = { color: col };
+            c.innerHTML = `<div class="flex flex-col items-center justify-between w-full h-full p-6 bg-slate-950/40 rounded-[3rem] border border-white/5 gap-4 pointer-events-none"><div onclick="window.setTraffic(this, 'red', event)" class="light rounded-full bg-red-950/20 border-2 border-red-500/10 pointer-events-auto cursor-pointer ${col==='red'?'ampel-active':''}" style="height: 28%; aspect-ratio:1; ${col==='red'?'background-color:#ef4444':''}"></div><div onclick="window.setTraffic(this, 'yellow', event)" class="light rounded-full bg-yellow-950/20 border-2 border-yellow-500/10 pointer-events-auto cursor-pointer ${col==='yellow'?'ampel-active':''}" style="height: 28%; aspect-ratio:1; ${col==='yellow'?'background-color:#eab308':''}"></div><div onclick="window.setTraffic(this, 'green', event)" class="light rounded-full bg-green-950/20 border-2 border-green-500/10 pointer-events-auto cursor-pointer ${col==='green'?'ampel-active':''}" style="height: 28%; aspect-ratio:1; ${col==='green'?'background-color:#22c55e':''}"></div></div>`;
+        }
+        window.setTraffic = (el, c, event) => { event.stopPropagation(); const p = el.parentElement; p.querySelectorAll('.light').forEach(l => { l.classList.remove('ampel-active'); l.style.backgroundColor=''; }); el.classList.add('ampel-active'); el.style.backgroundColor=c==='red'?'#ef4444':c==='yellow'?'#eab308':'#22c55e'; el.closest('.widget')._state.color = c; Sounds.click(); };
+
+        function initTimerWidget(c, w, i) {
+            w._timerData = i?.data?.timer || { timeLeft: 0, totalTime: 0, running: false }; w._state = { timer: w._timerData };
+            c.innerHTML = `<div class="flex flex-col items-center gap-2 h-full justify-center w-full relative timer-container"><div class="relative flex items-center justify-center flex-grow max-h-[70%] aspect-square"><svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160"><circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="8" fill="transparent" class="text-slate-800"></circle><circle id="timer-circle" cx="80" cy="80" r="70" stroke="currentColor" stroke-width="8" fill="transparent" stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round" class="text-cyan-500 transition-all duration-1000"></circle></svg><div id="timer-display" class="absolute inset-0 flex items-center justify-center font-black text-white tabular-nums sharp-text" style="font-size: 20cqmin;">00:00</div></div><div class="timer-input-area flex flex-col gap-3 w-full px-2 z-10 mb-2"><div class="flex items-center gap-2 bg-slate-950/40 p-2 rounded-2xl border border-white/5"><input type="number" id="custom-min" placeholder="Min" class="w-full bg-transparent text-center font-bold text-white outline-none" min="0" max="999"><span class="text-slate-600 font-black">:</span><input type="number" id="custom-sec" placeholder="Sek" class="w-full bg-transparent text-center font-bold text-white outline-none" min="0" max="59"></div></div><div class="timer-controls flex flex-col gap-2 w-full px-2"><div class="timer-presets flex gap-2 h-9"><button onclick="window.addTime(60, this)" class="flex-1 btn-glass">+1M</button><button onclick="window.addTime(300, this)" class="flex-1 btn-glass">+5M</button></div><button id="timer-toggle" onclick="window.toggleTimer(this)" class="w-full bg-cyan-600/80 py-3 rounded-2xl text-[11px] font-black shadow-lg">START</button></div></div>`;
+            const minInp = c.querySelector('#custom-min'); const secInp = c.querySelector('#custom-sec');
+            const syncInputs = () => { const total = (parseInt(minInp.value) || 0) * 60 + (parseInt(secInp.value) || 0); if(total > 0 && !w._timerData.running) { w._timerData.timeLeft = total; w._timerData.totalTime = total; window.updateTimerDisplay(w); } };
+            minInp.oninput = syncInputs; secInp.oninput = syncInputs; window.updateTimerDisplay(w);
+        }
+        window.updateTimerDisplay = (w) => {
+            const d = w._timerData; w.querySelector('#timer-display').textContent = `${Math.floor(d.timeLeft/60).toString().padStart(2,'0')}:${(d.timeLeft%60).toString().padStart(2,'0')}`;
+            const circ = w.querySelector('#timer-circle'); if(circ) circ.style.strokeDashoffset = 440 - (440 * (d.timeLeft / (d.totalTime || 1)));
+            const container = w.querySelector('.timer-container'); if(d.running) container.classList.add('timer-running'); else container.classList.remove('timer-running');
+        };
+        window.addTime = (s, btn) => { const w = btn.closest('.widget'); w._timerData.timeLeft += s; w._timerData.totalTime = Math.max(w._timerData.totalTime, w._timerData.timeLeft); window.updateTimerDisplay(w); Sounds.click(); };
+        window.toggleTimer = (btn) => {
+            const w = btn.closest('.widget');
+            if(w._timerData.running) { clearInterval(w._timerInterval); w._timerData.running = false; btn.textContent = "START"; }
+            else { if(w._timerData.timeLeft <= 0) return; w._timerData.running = true; btn.textContent = "STOPP";
+                w._timerInterval = setInterval(() => { if(w._timerData.timeLeft <= 0) { clearInterval(w._timerInterval); w._timerData.running = false; btn.textContent = "START"; window.updateTimerDisplay(w); confetti(); return; } w._timerData.timeLeft--; window.updateTimerDisplay(w); }, 1000);
+            }
+            window.updateTimerDisplay(w);
+        };
+
+        function initQRWidget(c, w, i) {
+            const val = i?.data?.qrValue || ''; w._state = { qrValue: val };
+            c.innerHTML = `<div class="flex flex-col gap-4 h-full w-full"><div id="qr-input-container" class="hidden animate-in fade-in slide-in-from-top-2 duration-300"><input type="text" id="qr-input" placeholder="URL oder Text..." class="w-full bg-slate-950/50 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none" value="${val}"></div><div id="qr-display" class="flex-grow flex items-center justify-center bg-white/5 rounded-[2rem] p-4 cursor-pointer hover:bg-white/10 transition-all"><div id="qr-wrapper" class="w-full h-full flex items-center justify-center"></div></div><div class="text-[9px] text-center text-slate-500 font-bold uppercase tracking-widest opacity-50">Klick auf QR zum Editieren</div></div>`;
+            const inp = c.querySelector('#qr-input'); const display = c.querySelector('#qr-display');
+            const gen = () => { const wrap = c.querySelector('#qr-wrapper'); wrap.innerHTML = ""; if(inp.value.trim()) new QRCode(wrap, { text: inp.value, width: 200, height: 200, colorDark : "#ffffff", colorLight : "transparent" }); else wrap.innerHTML = `<span class="text-slate-700 text-6xl">📱</span>`; w._state.qrValue = inp.value; };
+            display.onclick = (e) => { e.stopPropagation(); const container = c.querySelector('#qr-input-container'); container.classList.toggle('hidden'); if(!container.classList.contains('hidden')) inp.focus(); Sounds.click(); };
+            inp.oninput = gen; gen();
+        }
+
+        function initGroupWidget(container, initialData) { 
+            const savedNames = initialData?.data?.names || localStorage.getItem('teacher_names') || ''; 
+            container.innerHTML = `<div class="flex flex-col gap-4 h-full overflow-hidden"><textarea id="names-list" placeholder="Namen hier eingeben..." class="w-full h-32 bg-slate-950/50 border border-white/10 rounded-3xl p-5 text-sm outline-none resize-none font-medium focus:border-cyan-500/30 transition-colors">${savedNames}</textarea><div class="flex flex-col gap-3"><div class="flex items-center gap-3"><span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">Gruppen:</span><select id="group-size-select" class="bg-slate-800 border border-white/5 rounded-xl px-3 py-1.5 text-xs font-bold outline-none flex-grow"><option value="2">2er Paare</option><option value="3">3er Gruppen</option><option value="4">4er Gruppen</option></select></div><div class="grid grid-cols-2 gap-3"><button onclick="window.pickRandom(this)" class="btn-glass py-3 rounded-2xl">Zufall</button><button onclick="window.generateGroups(this)" class="bg-cyan-600/80 py-3 rounded-2xl text-[11px] font-black shadow-lg">GO</button></div></div><div id="group-output" class="overflow-y-auto flex-grow empty:hidden p-2 bg-slate-900/40 rounded-3xl"></div></div>`; 
+            const widget = container.closest('.widget'); widget._state = { names: savedNames };
+            container.querySelector('#names-list').oninput = (e) => { localStorage.setItem('teacher_names', e.target.value); widget._state.names = e.target.value; };
+        }
+        window.generateGroups = (btn) => {
+            const w = btn.closest('.widget'); const list = [...w.querySelector('#names-list').value.split('\n').map(n => n.trim()).filter(n => n)];
+            if(list.length < 2) return; const size = parseInt(w.querySelector('#group-size-select').value); Sounds.click();
+            for (let i = list.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [list[i], list[j]] = [list[j], list[i]]; }
+            const groups = []; for (let i = 0; i < list.length; i += size) groups.push(list.slice(i, i+size));
+            if (groups.length > 1 && groups[groups.length - 1].length === 1) groups[groups.length - 2].push(groups.pop()[0]);
+            w._currentGroups = groups;
+            w.querySelector('#group-output').innerHTML = `<div class="grid grid-cols-1 gap-2">${groups.map(g => `<div class="p-4 bg-slate-900/30 border border-white/5 rounded-2xl text-xs font-bold text-slate-300">${g.join(' • ')}</div>`).join('')}<button onclick="window.exportToPres(this)" class="w-full btn-glass mt-2 py-3 rounded-2xl border-purple-500/30 text-purple-300">In Präsentation übertragen</button></div>`;
+        };
+        window.exportToPres = (btn) => { const w = btn.closest('.widget'); if(w._currentGroups) spawnWidget('presentation', { data: { groups: w._currentGroups.map(names => ({ names, done: false, speakers: [] })) } }); Sounds.magic(); };
+        window.pickRandom = (btn) => { const w = btn.closest('.widget'); const list = w.querySelector('#names-list').value.split('\n').map(n => n.trim()).filter(n => n); if(list.length === 0) return; Sounds.click(); w.querySelector('#group-output').innerHTML = `<div class="p-6 bg-cyan-500/10 border border-cyan-500/20 rounded-3xl text-center text-cyan-400 font-black animate-bounce text-xl">${list[Math.floor(Math.random()*list.length)]}</div>`; };
+
+        function initPresentationWidget(container, widget, initialData) {
+            let groups = initialData?.data?.groups || []; widget._state = { groups };
+            widget.render = () => {
+                const groups = widget._state.groups;
+                container.innerHTML = `<div class="flex flex-col gap-4 h-full overflow-hidden"><button onclick="window.shufflePresentation('${widget.id}')" class="w-full bg-orange-600/80 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">Mixen</button><div class="flex-grow overflow-y-auto pr-1 flex flex-col gap-3">${groups.length === 0 ? '<div class="text-center text-slate-500 p-8 italic text-xs">Keine Gruppen...</div>' : groups.map((g, i) => { const isNext = !g.done && i === groups.findIndex(gr => !gr.done); return `<div class="p-4 bg-slate-900/30 border ${g.done ? 'border-slate-800 opacity-40' : (isNext ? 'border-cyan-500/40 bg-cyan-500/5' : 'border-white/5')} rounded-3xl transition-all relative"><div class="flex items-start gap-4"><div onclick="window.toggleGroupStatus('${widget.id}', ${i})" class="w-8 h-8 flex-shrink-0 rounded-full ${g.done ? 'bg-slate-800' : 'bg-slate-700'} flex items-center justify-center font-black text-xs cursor-pointer hover:scale-110 transition-transform ${g.done ? 'text-slate-600' : 'text-white'}">${g.done ? '✓' : i+1}</div><div class="flex-grow flex flex-col gap-2"><div class="flex flex-wrap items-center gap-1">${g.names.map((name, nIdx) => `<span onclick="window.pickSpeaker('${widget.id}', ${i}, ${nIdx})" class="text-sm font-bold cursor-pointer transition-all ${g.speakers.includes(nIdx) ? 'speaker-active' : 'text-slate-400'}">${name}</span>${nIdx < g.names.length - 1 ? '<span class="text-slate-700 px-0.5">•</span>' : ''}`).join('')}</div></div><button onclick="window.toggleAllSpeak('${widget.id}', ${i})" class="flex-shrink-0 px-2 py-1 rounded-lg text-[8px] font-black uppercase border border-slate-700 ${g.speakers.length === g.names.length ? 'bg-cyan-500 border-cyan-500 text-black' : 'text-slate-500'}">Alle</button></div>${isNext ? '<div class="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-cyan-500 rounded-full shadow-[0_0_15px_rgba(6,182,212,0.5)]"></div>' : ''}</div>`; }).join('')}</div></div>`;
+            }; widget.render();
+        }
+        window.shufflePresentation = (id) => { const w = document.getElementById(id); const g = w._state.groups; for (let i = g.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [g[i], g[j]] = [g[j], g[i]]; } g.forEach(gr => { gr.done = false; gr.speakers = []; }); Sounds.click(); w.render(); };
+        window.toggleGroupStatus = (id, idx) => { const w = document.getElementById(id); w._state.groups[idx].done = !w._state.groups[idx].done; if(w._state.groups[idx].done) w._state.groups[idx].speakers = []; Sounds.click(); w.render(); };
+        window.pickSpeaker = (id, gIdx, nIdx) => { const w = document.getElementById(id); const gr = w._state.groups[gIdx]; if(gr.done) return; const sIdx = gr.speakers.indexOf(nIdx); if (sIdx > -1) gr.speakers.splice(sIdx, 1); else gr.speakers.push(nIdx); Sounds.pop(); w.render(); };
+        window.toggleAllSpeak = (id, idx) => { const w = document.getElementById(id); const gr = w._state.groups[idx]; if(gr.done) return; if(gr.speakers.length === gr.names.length) gr.speakers = []; else gr.speakers = gr.names.map((_, i) => i); Sounds.magic(); w.render(); };
+
+        function initClassModeWidget(container) {
+            const originalModes = [{ id:'teach', name:'Lehrer', icon:'👨‍🏫'}, { id:'pres', name:'Präsentation', icon:'📊'}, { id:'murmel', name:'Murmelrunde', icon:'🐝'}, { id:'silent', name:'Einzelarbeit', icon:'🤫'}, { id:'partner', name:'Partnerarbeit', icon:'👥'}, { id:'group', name:'Gruppenarbeit', icon:'🏘️'}, { id:'test', name:'Prüfung', icon:'📝'}, { id:'clean', name:'Aufräumen', icon:'🧹'}];
+            const modes = [...originalModes, ...originalModes, ...originalModes];
+            const render = () => {
+                container.innerHTML = `<div class="relative w-full h-full flex flex-col items-center overflow-hidden"><div class="mode-carousel w-full flex-grow items-center scroll-smooth">${modes.map(m => `<div onclick="window.activateMode('${m.id}', this)" class="mode-card group"><span style="font-size: 10cqmin;" class="mb-3 transition-transform group-hover:scale-110">${m.icon}</span><span style="font-size: 3cqmin;" class="font-bold text-slate-400 text-center uppercase tracking-widest text-center">${m.name}</span></div>`).join('')}</div><div class="flex gap-10 pb-4 z-10"><button onclick="scrollCar(this, -160)" class="p-3 bg-white/5 rounded-full hover:bg-white/10 text-slate-400"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 18l-6-6 6-6"/></svg></button><button onclick="scrollCar(this, 160)" class="p-3 bg-white/5 rounded-full hover:bg-white/10 text-slate-400"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 18l6-6-6-6"/></svg></button></div></div>`;
+                const car = container.querySelector('.mode-carousel'); car.scrollLeft = originalModes.length * 160; car.onscroll = () => { const total = originalModes.length * 160; if (car.scrollLeft < total/2) car.scrollLeft += total; else if (car.scrollLeft > total*1.5) car.scrollLeft -= total; window.updateCarouselLogic(container); }; setTimeout(() => window.updateCarouselLogic(container), 50);
+            };
+            window.scrollCar = (btn, off) => { btn.closest('.relative').querySelector('.mode-carousel').scrollBy({ left: off, behavior:'smooth' }); Sounds.click(); };
+            window.activateMode = (mId) => { const mode = originalModes.find(m => m.id === mId); Sounds.click(); container.innerHTML = `<div class="flex items-center justify-center h-full w-full"><div onclick="window.backToModes(this)" class="aspect-square flex flex-col items-center justify-center glass border-2 border-purple-500/30 rounded-[3rem] cursor-pointer hover:bg-purple-500/10 transition-all p-8 group relative" style="width: 80%;"><span style="font-size: 35cqmin;" class="leading-none group-hover:scale-105 transition-transform">${mode.icon}</span><span class="font-black uppercase tracking-[0.2em] text-purple-400 mt-6 text-center text-[5cqmin] sharp-text text-center">${mode.name}</span></div></div>`; };
+            window.updateCarouselLogic = (cont) => { const car = cont.querySelector('.mode-carousel'); if(!car) return; const center = car.scrollLeft + car.offsetWidth / 2; car.querySelectorAll('.mode-card').forEach(card => { const dist = Math.abs(center - (card.offsetLeft + card.offsetWidth/2)); const scale = Math.max(0.6, 1.2 - (dist / (car.offsetWidth * 0.45))); card.style.transform = `scale(${scale})`; card.style.opacity = Math.max(0.2, 1.1 - (dist / (car.offsetWidth * 0.35))); }); };
+            window.backToModes = () => render(); render();
+        }
+
+        function initSettingsWidget(c) {
+            c.innerHTML = `
+                <div class="flex flex-col gap-4 h-full w-full overflow-hidden">
+                    <div class="flex-grow overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-2">
+                        <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
+                            <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Ankermodus (Fixieren)</span>
+                            <input type="checkbox" id="c-anchor" class="hidden peer" ${config.anchorMode?'checked':''}>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                        </label>
+                        <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
+                            <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Kreise statt Balken</span>
+                            <input type="checkbox" id="c-hstyle" class="hidden peer" ${config.headerStyle==='circles'?'checked':''}>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-purple-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                        </label>
+                        <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
+                            <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Sound Effekte</span>
+                            <input type="checkbox" id="c-snd" class="hidden peer" ${config.soundEnabled?'checked':''}>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-orange-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                        </label>
+                        <div class="w-full h-px bg-white/5 my-1"></div>
+                        <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
+                            <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Uhr anzeigen</span>
+                            <input type="checkbox" id="c-time" class="hidden peer" ${config.showTime?'checked':''}>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                        </label>
+                        <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
+                            <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Sekunden</span>
+                            <input type="checkbox" id="c-secs" class="hidden peer" ${config.showSeconds?'checked':''}>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                        </label>
+                        <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
+                            <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Datum anzeigen</span>
+                            <input type="checkbox" id="c-date" class="hidden peer" ${config.showDate?'checked':''}>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                        </label>
+                    </div>
+                    <button onclick="window.saveC(this)" class="w-full py-5 rounded-2xl btn-glass mt-auto flex-shrink-0">Einstellungen Speichern</button>
+                </div>`;
+        }
+        window.saveC = (btn) => { 
+            const p = btn.closest('.flex-col'); 
+            config.anchorMode = p.querySelector('#c-anchor').checked; 
+            config.soundEnabled = p.querySelector('#c-snd').checked; 
+            config.showTime = p.querySelector('#c-time').checked;
+            config.showSeconds = p.querySelector('#c-secs').checked;
+            config.showDate = p.querySelector('#c-date').checked;
+            config.headerStyle = p.querySelector('#c-hstyle').checked ? 'circles' : 'bar'; 
+            localStorage.setItem('dashboard_config', JSON.stringify(config)); 
+            updateTime(); applyConfigStyles(); btn.textContent = "✓ Übernommen"; setTimeout(() => btn.textContent = "Einstellungen Speichern", 1500); 
+        };
+
+        function initSessionWidget(c) { c.innerHTML = `<div class="flex flex-col gap-4 h-full justify-center"><button onclick="window.exportSession()" class="w-full py-5 rounded-[1.5rem] btn-glass flex items-center justify-center gap-3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Session Sichern</button><div class="relative"><input type="file" id="import-file" class="hidden" accept=".json" onchange="window.importSession(this)"><button onclick="document.getElementById('import-file').click()" class="w-full py-5 rounded-[1.5rem] bg-slate-800/40 border border-white/5 text-slate-500 font-medium uppercase tracking-widest hover:bg-slate-700 transition-all flex items-center justify-center gap-3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Session Laden</button></div></div>`; }
+        window.exportSession = () => { const session = { config: config, widgets: [] }; document.querySelectorAll('.widget').forEach(w => { if (w.getAttribute('data-type') === 'session') return; session.widgets.push({ type: w.getAttribute('data-type'), pos:{x:w.style.left, y:w.style.top}, sizeIndex:w._sizeIndex, minimized:w.classList.contains('minimized'), data:w._state || {} }); }); const blob = new Blob([JSON.stringify(session, null, 2)], { type:'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `lehrer_session.json`; a.click(); Sounds.magic(); };
+        window.importSession = (input) => { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const session = JSON.parse(e.target.result); document.querySelectorAll('.widget').forEach(w => { if(w.getAttribute('data-type') !== 'session') closeWidget(w.id); }); session.widgets.forEach(ws => spawnWidget(ws.type, ws)); Sounds.magic(); } catch(err) { console.error(err); } }; reader.readAsText(file); };
+
+        function initDiceWidget(c) { 
+            c.innerHTML = `
+                <div class="flex flex-col items-center gap-4 h-full justify-center w-full">
+                    <div id="dice-container" class="w-full flex-grow flex flex-col gap-3">
+                        <div id="dice-area" onclick="window.rollDice(this)" class="flex flex-wrap gap-[2cqmin] items-center justify-center cursor-pointer group flex-grow w-full overflow-hidden bg-white/5 border border-white/5 rounded-[2.5rem] p-4 hover:bg-white/10 transition-all interactive-frame">
+                            <div class="dice-box aspect-square bg-slate-800 border border-slate-700 rounded-[20%] flex items-center justify-center font-black text-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.2)]" style="width: 45cqmin; font-size: 22cqmin;">?</div>
+                        </div>
+                        <div class="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between interactive-frame">
+                            <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Anzahl:</span>
+                            <select id="dice-count" class="bg-slate-800 border border-white/5 rounded-xl px-4 py-2 text-xs text-slate-300 font-bold outline-none">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>`; 
+        }
+        window.rollDice = (area) => { 
+            const count = parseInt(area.parentElement.querySelector('#dice-count').value); 
+            area.innerHTML = ''; 
+            for(let i=0; i<count; i++) { 
+                const d = document.createElement('div'); 
+                d.className = 'dice-box aspect-square flex items-center justify-center font-black text-cyan-400 bg-slate-800 border border-slate-700 rounded-[20%]'; 
+                let dSize = count <= 1 ? '45cqmin' : (count <= 2 ? '30cqmin' : (count <= 4 ? '25cqmin' : '18cqmin'));
+                let fSize = count <= 1 ? '22cqmin' : (count <= 2 ? '15cqmin' : (count <= 4 ? '12cqmin' : '8cqmin'));
+                d.style.width = dSize; d.style.fontSize = fSize; d.textContent = '...'; area.appendChild(d); 
+                setTimeout(() => { d.textContent = Math.floor(Math.random()*6)+1; }, 400); 
+            } 
+            Sounds.click(); 
+        };
+
+        // --- ZUSÄTZLICHES WIDGET (AKTUALISIERT) ---
+        function initAdditionalWidget(c) {
+            const links = [
+                { name: 'Mathetrainer', url: 'mathetrainer.html' }
+            ];
+            
+            c.innerHTML = `
+                <div class="flex flex-col gap-3 h-full w-full overflow-hidden">
+                    <div class="flex-grow overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-2 interactive-frame">
+                        ${links.map(link => `
+                            <button onclick="window.openLink('${link.url}')" class="w-full p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between hover:bg-white/10 transition-all group">
+                                <span class="font-bold text-[11px] uppercase tracking-widest text-slate-300 group-hover:text-blue-400 transition-colors">${link.name}</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-slate-600 group-hover:text-blue-400 transition-colors">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
+                                </svg>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="text-[9px] text-center text-slate-600 font-bold uppercase tracking-widest py-2">Modulare Erweiterungen</div>
+                </div>`;
+        }
+        window.openLink = (url) => { window.open(url, '_blank'); Sounds.click(); };
+
+        function initFeedbackWidget(container) { const effects = [{ id:'confetti', icon:'🎉'}, { id:'fireworks', icon:'🎆'}, { id:'snow', icon:'❄️'}, { id:'balloons', icon:'🎈'}, { id:'thumb', icon:'👍'}, { id:'star', icon:'✨'}]; container.innerHTML = `<div class="grid grid-cols-3 gap-3 h-full w-full">${effects.map(e => `<button onclick="window.triggerEffect('${e.id}')" class="flex items-center justify-center aspect-square rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all group overflow-hidden"><span style="font-size: 8cqmin;" class="group-hover:scale-125 transition-transform">${e.icon}</span></button>`).join('')}</div>`; }
+        window.triggerEffect = (id) => { if (id === 'confetti') { Sounds.tada(); confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); } else if (id === 'fireworks') { Sounds.tada(); const end = Date.now() + 5000; (function frame() { confetti({ particleCount: 10, angle: 60, spread: 55, origin: { x: 0 } }); confetti({ particleCount: 10, angle: 120, spread: 55, origin: { x: 1 } }); if (Date.now() < end) requestAnimationFrame(frame); }()); } else if (id === 'snow') { Sounds.magic(); confetti({ particleCount: 80, spread: 160, origin: { y: 0 }, gravity: 0.5, ticks: 200, colors: ['#ffffff'] }); } else { const emoji = id==='balloons'?'🎈':id==='thumb'?'👍':'✨'; for(let i=0; i<15; i++) { const el = document.createElement('div'); el.className = 'floating-emoji'; el.textContent = emoji; el.style.left = Math.random()*90+'vw'; el.style.fontSize = Math.random()*2+2+'rem'; el.style.animationDelay = Math.random()*2+'s'; document.body.appendChild(el); setTimeout(() => el.remove(), 4000); } if(id==='balloons') Sounds.pop(); } };
+
+        window.onload = () => { updateTime(); applyConfigStyles(); };
+    </script>
+</body>
+</html>
