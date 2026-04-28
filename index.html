@@ -377,7 +377,7 @@
             if (type === 'additional') initAdditionalWidget(content);
             
             if (initialData?.pos) { widget.style.left = initialData.pos.x; widget.style.top = initialData.pos.y; }
-            else { widget.style.left = `${(window.innerWidth/2)-(currentSize.w/2)+(Math.random()-0.5)*100}px`; widget.style.top = `${(window.innerHeight/2)-(currentSize.h/2)+(Math.random()-0.5)*100}px`; }
+            else { widget.style.left = `${(window.innerWidth/2)-(currentSize.w/2)+(Math.random()-0.5)*100}px`; widget.style.top = `${(window.innerHeight/2)-(currentSize.h/2)-(Math.random()*20)}px`; }
             if (initialData?.minimized) widget.classList.add('minimized');
             
             setupDraggable(widget, header);
@@ -435,7 +435,32 @@
 
         function initTimerWidget(c, w, i) {
             w._timerData = i?.data?.timer || { timeLeft: 0, totalTime: 0, running: false }; w._state = { timer: w._timerData };
-            c.innerHTML = `<div class="flex flex-col items-center gap-2 h-full justify-center w-full relative timer-container"><div class="relative flex items-center justify-center flex-grow max-h-[70%] aspect-square"><svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160"><circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="8" fill="transparent" class="text-slate-800"></circle><circle id="timer-circle" cx="80" cy="80" r="70" stroke="currentColor" stroke-width="8" fill="transparent" stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round" class="text-cyan-500 transition-all duration-1000"></circle></svg><div id="timer-display" class="absolute inset-0 flex items-center justify-center font-black text-white tabular-nums sharp-text" style="font-size: 20cqmin;">00:00</div></div><div class="timer-input-area flex flex-col gap-3 w-full px-2 z-10 mb-2"><div class="flex items-center gap-2 bg-slate-950/40 p-2 rounded-2xl border border-white/5"><input type="number" id="custom-min" placeholder="Min" class="w-full bg-transparent text-center font-bold text-white outline-none" min="0" max="999"><span class="text-slate-600 font-black">:</span><input type="number" id="custom-sec" placeholder="Sek" class="w-full bg-transparent text-center font-bold text-white outline-none" min="0" max="59"></div></div><div class="timer-controls flex flex-col gap-2 w-full px-2"><div class="timer-presets flex gap-2 h-9"><button onclick="window.addTime(60, this)" class="flex-1 btn-glass">+1M</button><button onclick="window.addTime(300, this)" class="flex-1 btn-glass">+5M</button></div><button id="timer-toggle" onclick="window.toggleTimer(this)" class="w-full bg-cyan-600/80 py-3 rounded-2xl text-[11px] font-black shadow-lg">START</button></div></div>`;
+            c.innerHTML = `
+                <div class="flex flex-col items-center h-full justify-between w-full relative timer-container py-[2cqmin]">
+                    <div class="relative flex items-center justify-center w-full max-h-[55%] aspect-square">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+                            <circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="8" fill="transparent" class="text-slate-800"></circle>
+                            <circle id="timer-circle" cx="80" cy="80" r="70" stroke="currentColor" stroke-width="8" fill="transparent" stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round" class="text-cyan-500 transition-all duration-1000"></circle>
+                        </svg>
+                        <div id="timer-display" class="absolute inset-0 flex items-center justify-center font-black text-white tabular-nums sharp-text" style="font-size: 22cqmin;">00:00</div>
+                    </div>
+                    
+                    <div class="timer-input-area flex flex-col gap-[3cqmin] w-full px-[6cqmin] z-10">
+                        <div class="flex items-center gap-[2cqmin] bg-slate-950/40 p-[2cqmin] rounded-2xl border border-white/5">
+                            <input type="number" id="custom-min" placeholder="Min" class="w-full bg-transparent text-center font-bold text-white outline-none" min="0" max="999" style="font-size: 5.5cqmin;">
+                            <span class="text-slate-600 font-black" style="font-size: 5.5cqmin;">:</span>
+                            <input type="number" id="custom-sec" placeholder="Sek" class="w-full bg-transparent text-center font-bold text-white outline-none" min="0" max="59" style="font-size: 5.5cqmin;">
+                        </div>
+                    </div>
+                    
+                    <div class="timer-controls flex flex-col gap-[3cqmin] w-full px-[6cqmin] mt-auto">
+                        <div class="timer-presets flex gap-[2cqmin] h-[9cqmin]">
+                            <button onclick="window.addTime(60, this)" class="flex-1 btn-glass rounded-xl" style="font-size: 4.5cqmin;">+1M</button>
+                            <button onclick="window.addTime(300, this)" class="flex-1 btn-glass rounded-xl" style="font-size: 4.5cqmin;">+5M</button>
+                        </div>
+                        <button id="timer-toggle" onclick="window.toggleTimer(this, event)" class="w-full bg-cyan-600/80 py-[4cqmin] rounded-2xl font-black shadow-lg interactive-frame relative z-10 transition-all duration-300" style="font-size: 5.5cqmin;">START</button>
+                    </div>
+                </div>`;
             const minInp = c.querySelector('#custom-min'); const secInp = c.querySelector('#custom-sec');
             const syncInputs = () => { const total = (parseInt(minInp.value) || 0) * 60 + (parseInt(secInp.value) || 0); if(total > 0 && !w._timerData.running) { w._timerData.timeLeft = total; w._timerData.totalTime = total; window.updateTimerDisplay(w); } };
             minInp.oninput = syncInputs; secInp.oninput = syncInputs; window.updateTimerDisplay(w);
@@ -446,11 +471,36 @@
             const container = w.querySelector('.timer-container'); if(d.running) container.classList.add('timer-running'); else container.classList.remove('timer-running');
         };
         window.addTime = (s, btn) => { const w = btn.closest('.widget'); w._timerData.timeLeft += s; w._timerData.totalTime = Math.max(w._timerData.totalTime, w._timerData.timeLeft); window.updateTimerDisplay(w); Sounds.click(); };
-        window.toggleTimer = (btn) => {
+        window.toggleTimer = (btn, event) => {
+            if (event) event.stopPropagation(); 
             const w = btn.closest('.widget');
-            if(w._timerData.running) { clearInterval(w._timerInterval); w._timerData.running = false; btn.textContent = "START"; }
-            else { if(w._timerData.timeLeft <= 0) return; w._timerData.running = true; btn.textContent = "STOPP";
-                w._timerInterval = setInterval(() => { if(w._timerData.timeLeft <= 0) { clearInterval(w._timerInterval); w._timerData.running = false; btn.textContent = "START"; window.updateTimerDisplay(w); confetti(); return; } w._timerData.timeLeft--; window.updateTimerDisplay(w); }, 1000);
+            if(w._timerData.running) { 
+                clearInterval(w._timerInterval); 
+                w._timerData.running = false; 
+                btn.textContent = "START"; 
+                btn.classList.remove('bg-red-500', 'shadow-[0_0_25px_rgba(239,68,68,0.5)]', 'text-white');
+                btn.classList.add('bg-cyan-600/80');
+            }
+            else { 
+                if(w._timerData.timeLeft <= 0) return; 
+                w._timerData.running = true; 
+                btn.textContent = "STOPP";
+                btn.classList.remove('bg-cyan-600/80');
+                btn.classList.add('bg-red-500', 'shadow-[0_0_25px_rgba(239,68,68,0.5)]', 'text-white');
+                w._timerInterval = setInterval(() => { 
+                    if(w._timerData.timeLeft <= 0) { 
+                        clearInterval(w._timerInterval); 
+                        w._timerData.running = false; 
+                        btn.textContent = "START"; 
+                        btn.classList.remove('bg-red-500', 'shadow-[0_0_25px_rgba(239,68,68,0.5)]', 'text-white');
+                        btn.classList.add('bg-cyan-600/80');
+                        window.updateTimerDisplay(w); 
+                        confetti(); 
+                        return; 
+                    } 
+                    w._timerData.timeLeft--; 
+                    window.updateTimerDisplay(w); 
+                }, 1000);
             }
             window.updateTimerDisplay(w);
         };
@@ -524,23 +574,23 @@
                         <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
                             <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Sound Effekte</span>
                             <input type="checkbox" id="c-snd" class="hidden peer" ${config.soundEnabled?'checked':''}>
-                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-orange-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-orange-500 relative transition-all after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
                         </label>
                         <div class="w-full h-px bg-white/5 my-1"></div>
                         <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
                             <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Uhr anzeigen</span>
                             <input type="checkbox" id="c-time" class="hidden peer" ${config.showTime?'checked':''}>
-                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
                         </label>
                         <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
                             <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Sekunden</span>
                             <input type="checkbox" id="c-secs" class="hidden peer" ${config.showSeconds?'checked':''}>
-                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
                         </label>
                         <label class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all interactive-frame">
                             <span class="font-bold text-[10px] uppercase tracking-widest text-slate-400">Datum anzeigen</span>
                             <input type="checkbox" id="c-date" class="hidden peer" ${config.showDate?'checked':''}>
-                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:content-[''] after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                            <div class="w-10 h-5 bg-slate-800 rounded-full peer-checked:bg-cyan-500 relative transition-all after:absolute after:top-1 after:left-1 after:w-3 after:h-3 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
                         </label>
                     </div>
                     <button onclick="window.saveC(this)" class="w-full py-5 rounded-2xl btn-glass mt-auto flex-shrink-0">Einstellungen Speichern</button>
@@ -593,7 +643,6 @@
             Sounds.click(); 
         };
 
-        // --- ZUSÄTZLICHES WIDGET (AKTUALISIERT) ---
         function initAdditionalWidget(c) {
             const links = [
                 { name: 'Mathetrainer', url: 'mathetrainer.html' }
